@@ -1,0 +1,37 @@
+/* ConsultEase custom styles (on top of Bootstrap 5) */
+
+:root {
+    --ce-primary: #0369a1;      /* calendar blue */
+    --ce-accent: #047857;       /* available green */
+    --ce-background: #f0f9ff;
+    --ce-text: #0f172a;
+    --ce-muted: #475569;
+    --ce-border: #e0f0f8;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--ce-background);
+    color: var(--ce-text);
+}
+
+.app-navbar {
+    background-color: var(--ce-primary);
+}
+
+.app-footer {
+    color: var(--ce-muted);
+    border-top: 1px solid var(--ce-border);
+}
+
+.card {
+    border: 1px solid var(--ce-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.text-muted-ce {
+    color: var(--ce-muted);
+}
