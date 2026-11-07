@@ -35,3 +35,4 @@ Sample logins: `lecturer@consultease.test` / `lecturer123`, `student1@consulteas
 - Hash passwords with `password_hash()` and check them with `password_verify()`.
 - Escape output with `htmlspecialchars()`.
 - Start every commit message with the Jira key, e.g. `KAN-12 Add student booking form`.
+- For any UI/UX work, use the ui-ux-pro-max skill and follow the team's UI mockup in the docs/ folder.
