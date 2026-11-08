@@ -22,6 +22,11 @@ $result = $conn->query($sql);
     </tr>
     <?php endwhile; ?>
 </table>
+<div style="margin-top: 20px;">
+    <a href="available_slots.php" class="btn btn-outline-primary">
+        ← Back to Dashboard
+    </a>
+</div>
 <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; }
     h2 { color: #2c3e50; }
