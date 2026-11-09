@@ -1,4 +1,16 @@
 <?php
+session_start();
+
+// Only authenticated students can access this page
+if (
+    !isset($_SESSION['user_id']) ||
+    !isset($_SESSION['user_role']) ||
+    $_SESSION['user_role'] !== 'student'
+) {
+    header('Location: ../auth/login.php');
+    exit;
+}
+
 require_once '../config/db.php';
 
 // Upcoming slots (today or later) that nobody has an active booking on.
