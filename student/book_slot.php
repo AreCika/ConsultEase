@@ -1,39 +1,177 @@
 <?php
-require_once '../config/db.php';
 session_start();
-// Dummy login untuk test (Student ID: 2)
-if (!isset($_SESSION['user_id'])) { $_SESSION['user_id'] = 2; } 
 
-$student_id = $_SESSION['user_id'];
-$slot_id = $_GET['slot_id'] ?? 1; 
+// Only authenticated students can book consultation slots
+if (
+    !isset($_SESSION['user_id']) ||
+    !isset($_SESSION['user_role']) ||
+    $_SESSION['user_role'] !== 'student'
+) {
+    header('Location: ../auth/login.php');
+    exit;
+}
 
-$slotQuery = $conn->query("SELECT s.*, u.name as lecturer_name FROM slots s JOIN users u ON s.lecturer_id = u.id WHERE s.id = $slot_id");
-$slot = $slotQuery->fetch_assoc();
+require_once '../config/db.php';
+ 
 
-if (!$slot) { die("Slot tidak dijumpai. Sila buat slot di page lecturer dulu."); }
+
+$student_id = (int) $_SESSION['user_id'];
+
+// Get and validate the selected slot ID
+$slot_id = filter_input(INPUT_GET, 'slot_id', FILTER_VALIDATE_INT);
+
+if (!$slot_id || $slot_id <= 0) {
+    http_response_code(400);
+    exit('Invalid consultation slot.');
+}
+
+// Retrieve the selected consultation slot
+$stmt = $conn->prepare(
+    "SELECT s.*, u.name AS lecturer_name
+     FROM slots s
+     JOIN users u ON s.lecturer_id = u.id
+     WHERE s.id = ?"
+);
+
+$stmt->bind_param("i", $slot_id);
+$stmt->execute();
+
+$slot = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if (!$slot) {
+    http_response_code(404);
+    exit('Consultation slot not found.');
+}
+
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $reason = $_POST['reason'];
-    $check = $conn->query("SELECT id FROM bookings WHERE slot_id = $slot_id AND student_id = $student_id");
-    
-    if ($check->num_rows > 0) {
-        echo "<p style='color:red;'>Anda sudah menempah slot ini!</p>";
+
+    $reason = trim($_POST['reason'] ?? '');
+
+    if ($reason === '') {
+        echo "<p style='color:red;'>Please enter a reason for consultation.</p>";
     } else {
-        $stmt = $conn->prepare("INSERT INTO bookings (slot_id, student_id, reason) VALUES (?, ?, ?)");
-        $stmt->bind_param("iis", $slot_id, $student_id, $reason);
-        if ($stmt->execute()) { echo "<p style='color:green;'>Booking berjaya! <a href='my_bookings.php'>Lihat Status</a></p>"; } 
-        else { echo "<p style='color:red;'>Error: " . $stmt->error . "</p>"; }
+        try {
+            // Start transaction to prevent concurrent bookings
+            $conn->begin_transaction();
+
+            // Lock the selected slot while checking and creating a booking
+            $lockStmt = $conn->prepare(
+                "SELECT id FROM slots WHERE id = ? FOR UPDATE"
+            );
+            $lockStmt->bind_param("i", $slot_id);
+            $lockStmt->execute();
+            $lockedSlot = $lockStmt->get_result()->fetch_assoc();
+            $lockStmt->close();
+
+            if (!$lockedSlot) {
+                $conn->rollback();
+                echo "<p style='color:red;'>Consultation slot not found.</p>";
+            } else {
+
+                // Check whether the slot already has an active booking
+                $checkStmt = $conn->prepare(
+                    "SELECT id FROM bookings
+                     WHERE slot_id = ?
+                       AND status IN ('Pending', 'Confirmed')
+                     LIMIT 1"
+                );
+
+                $checkStmt->bind_param("i", $slot_id);
+                $checkStmt->execute();
+                $existingBooking = $checkStmt->get_result()->fetch_assoc();
+                $checkStmt->close();
+
+                if ($existingBooking) {
+                    $conn->rollback();
+
+                    echo "<p style='color:red;'>
+                            This consultation slot has already been booked.
+                            Please choose another available slot.
+                          </p>";
+                } else {
+
+                    // Insert the new booking with Pending status
+                    $insertStmt = $conn->prepare(
+                        "INSERT INTO bookings
+                         (slot_id, student_id, reason, status)
+                         VALUES (?, ?, ?, 'Pending')"
+                    );
+
+                    $insertStmt->bind_param(
+                        "iis",
+                        $slot_id,
+                        $student_id,
+                        $reason
+                    );
+
+                    $insertStmt->execute();
+                    $insertStmt->close();
+
+                    // Save transaction
+                    $conn->commit();
+
+                    echo "<p style='color:green;'>
+                            Booking successful!
+                            <a href='my_bookings.php'>View My Bookings</a>
+                          </p>";
+                }
+            }
+
+        } catch (mysqli_sql_exception $e) {
+            $conn->rollback();
+
+            error_log('Booking error: ' . $e->getMessage());
+
+            echo "<p style='color:red;'>
+                    Unable to complete booking. Please try again.
+                  </p>";
+        }
     }
 }
+
 ?>
+
 <h2>Book Slot</h2>
 <p><strong>Lecturer:</strong> <?= $slot['lecturer_name'] ?></p>
 <p><strong>Date:</strong> <?= $slot['slot_date'] ?> (<?= $slot['start_time'] ?> - <?= $slot['end_time'] ?>)</p>
 <p><strong>Venue:</strong> <?= $slot['venue'] ?></p>
-<form method="POST">
-    Reason: <br><textarea name="reason" required rows="4" cols="30"></textarea><br><br>
-    <button type="submit">Confirm Booking</button>
-</form>
+<?php
+$checkStmt = $conn->prepare(
+    "SELECT id FROM bookings
+     WHERE slot_id = ?
+       AND status IN ('Pending', 'Confirmed')
+     LIMIT 1"
+);
+
+$checkStmt->bind_param("i", $slot_id);
+$checkStmt->execute();
+$isBooked = $checkStmt->get_result()->num_rows > 0;
+$checkStmt->close();
+?>
+
+<?php if (!$isBooked): ?>
+    <form method="POST">
+        Reason: <br>
+        <textarea name="reason" required rows="4" cols="30"></textarea>
+        <br><br>
+        <button type="submit">Confirm Booking</button>
+    </form>
+<?php endif; ?>
+
+<div style="margin-top: 20px;">
+    <a href="available_slots.php"
+       style="display: inline-block;
+              padding: 10px 16px;
+              background-color: #3498db;
+              color: white;
+              text-decoration: none;
+              border-radius: 5px;">
+        &larr; Back to Dashboard
+    </a>
+</div>
 <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; }
     h2 { color: #2c3e50; }
