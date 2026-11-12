@@ -68,10 +68,11 @@ $userRole = $isLoggedIn ? $_SESSION['user_role'] : '';
                            href="<?php echo BASE_URL; ?>lecturer/create_slot.php">
                             Create Slot
                         </a>
+
                         <a class="nav-link text-white"
-   href="<?php echo BASE_URL; ?>lecturer/booking_requests.php">
-    Booking Requests
-</a>
+                           href="<?php echo BASE_URL; ?>lecturer/booking_requests.php">
+                            Booking Requests
+                        </a>
 
                     <?php endif; ?>
 

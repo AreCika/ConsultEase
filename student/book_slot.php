@@ -12,8 +12,6 @@ if (
 }
 
 require_once '../config/db.php';
- 
-
 
 $student_id = (int) $_SESSION['user_id'];
 
@@ -44,14 +42,17 @@ if (!$slot) {
     exit('Consultation slot not found.');
 }
 
-
+// Message shown above the form after submitting ('success' or 'danger')
+$message = '';
+$messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $reason = trim($_POST['reason'] ?? '');
 
     if ($reason === '') {
-        echo "<p style='color:red;'>Please enter a reason for consultation.</p>";
+        $message = 'Please enter a reason for consultation.';
+        $messageType = 'danger';
     } else {
         try {
             // Start transaction to prevent concurrent bookings
@@ -68,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$lockedSlot) {
                 $conn->rollback();
-                echo "<p style='color:red;'>Consultation slot not found.</p>";
+                $message = 'Consultation slot not found.';
+                $messageType = 'danger';
             } else {
 
                 // Check whether the slot already has an active booking
@@ -87,10 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($existingBooking) {
                     $conn->rollback();
 
-                    echo "<p style='color:red;'>
-                            This consultation slot has already been booked.
-                            Please choose another available slot.
-                          </p>";
+                    $message = 'This consultation slot has already been booked. Please choose another available slot.';
+                    $messageType = 'danger';
                 } else {
 
                     // Insert the new booking with Pending status
@@ -113,10 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Save transaction
                     $conn->commit();
 
-                    echo "<p style='color:green;'>
-                            Booking successful!
-                            <a href='my_bookings.php'>View My Bookings</a>
-                          </p>";
+                    $message = 'Booking successful!';
+                    $messageType = 'success';
                 }
             }
 
@@ -125,20 +123,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             error_log('Booking error: ' . $e->getMessage());
 
-            echo "<p style='color:red;'>
-                    Unable to complete booking. Please try again.
-                  </p>";
+            $message = 'Unable to complete booking. Please try again.';
+            $messageType = 'danger';
         }
     }
 }
 
-?>
-
-<h2>Book Slot</h2>
-<p><strong>Lecturer:</strong> <?= $slot['lecturer_name'] ?></p>
-<p><strong>Date:</strong> <?= $slot['slot_date'] ?> (<?= $slot['start_time'] ?> - <?= $slot['end_time'] ?>)</p>
-<p><strong>Venue:</strong> <?= $slot['venue'] ?></p>
-<?php
+// Hide the form if the slot already has an active booking
 $checkStmt = $conn->prepare(
     "SELECT id FROM bookings
      WHERE slot_id = ?
@@ -150,38 +141,90 @@ $checkStmt->bind_param("i", $slot_id);
 $checkStmt->execute();
 $isBooked = $checkStmt->get_result()->num_rows > 0;
 $checkStmt->close();
+
+// e.g. "23 November 2026 (Monday)" and "03:00 PM"
+$dateText  = date('j F Y (l)', strtotime($slot['slot_date']));
+$startText = date('h:i A', strtotime($slot['start_time']));
+$endText   = date('h:i A', strtotime($slot['end_time']));
+
+$pageTitle = 'Book Consultation - ConsultEase';
+include '../includes/header.php';
 ?>
 
-<?php if (!$isBooked): ?>
-    <form method="POST">
-        Reason: <br>
-        <textarea name="reason" required rows="4" cols="30"></textarea>
-        <br><br>
-        <button type="submit">Confirm Booking</button>
-    </form>
-<?php endif; ?>
-
-<div style="margin-top: 20px;">
-    <a href="available_slots.php"
-       style="display: inline-block;
-              padding: 10px 16px;
-              background-color: #3498db;
-              color: white;
-              text-decoration: none;
-              border-radius: 5px;">
-        &larr; Back to Dashboard
-    </a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Book Consultation</h1>
+        <p class="text-muted-ce mb-0">Confirm your appointment details and provide a reason for consultation with the lecturer.</p>
+    </div>
+    <a href="available_slots.php" class="btn btn-outline-secondary">&larr; Back to Dashboard</a>
 </div>
-<style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; }
-    h2 { color: #2c3e50; }
-    form { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; }
-    input[type="date"], input[type="time"], input[type="text"] { width: 100%; padding: 10px; margin: 8px 0 20px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    button { background-color: #3498db; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-    button:hover { background-color: #2980b9; }
-    a { color: #3498db; text-decoration: none; display: inline-block; margin-top: 15px; }
-    table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-top: 20px; }
-    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #3498db; color: white; }
-    tr:hover { background-color: #f1f1f1; }
-</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <?php if ($message !== ''): ?>
+            <div class="alert alert-<?php echo $messageType; ?>" role="<?php echo $messageType === 'success' ? 'status' : 'alert'; ?>">
+                <?php echo htmlspecialchars($message); ?>
+                <?php if ($messageType === 'success'): ?>
+                    <a href="my_bookings.php" class="alert-link">View My Bookings</a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="card ce-card">
+            <div class="card-body p-3 p-md-4">
+
+                <span class="badge rounded-pill ce-count-badge mb-3">Selected Slot</span>
+
+                <div class="ce-detail-box p-3 mb-4">
+                    <div class="mb-3">
+                        <div class="ce-detail-label">Lecturer</div>
+                        <div class="fw-bold"><?php echo htmlspecialchars($slot['lecturer_name']); ?></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="ce-detail-label">Date</div>
+                            <div class="tabular"><?php echo htmlspecialchars($dateText); ?></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="ce-detail-label">Consultation Window</div>
+                            <div class="tabular"><?php echo htmlspecialchars($startText . ' - ' . $endText); ?></div>
+                        </div>
+                        <div class="col-12">
+                            <div class="ce-detail-label">Venue / Location</div>
+                            <div><?php echo htmlspecialchars($slot['venue']); ?></div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if (!$isBooked): ?>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label fw-semibold">Reason for Consultation <span class="text-danger">*</span></label>
+                            <textarea id="reason" name="reason" class="form-control" rows="4" required
+                                      aria-describedby="reasonHelp"
+                                      placeholder="e.g. FYP project progress, assignment clarification"></textarea>
+                            <div id="reasonHelp" class="form-text">Provide enough detail so the lecturer can prepare for your session.</div>
+                        </div>
+
+                        <div class="ce-info-box p-3 mb-4">
+                            <div class="fw-semibold">Pending Approval Process</div>
+                            <div class="small">Your booking request will be placed in Pending status until the lecturer confirms or declines it.</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="available_slots.php" class="btn btn-light border">Back</a>
+                            <button type="submit" class="btn btn-ce-primary">Submit Booking &rarr;</button>
+                        </div>
+                    </form>
+                <?php elseif ($message === ''): ?>
+                    <p class="text-muted-ce mb-0">This slot has already been booked. Please choose another available slot.</p>
+                <?php endif; ?>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<?php include '../includes/footer.php'; ?>

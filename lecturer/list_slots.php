@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 // Generate CSRF token for delete forms
@@ -129,29 +128,28 @@ include '../includes/header.php';
                                         Edit
                                     </a>
 
-                                    
-<form
-    method="POST"
-    action="delete_slot.php"
-    class="d-inline"
-    onsubmit="return confirm('Delete this slot?');">
+                                    <form
+                                        method="POST"
+                                        action="delete_slot.php"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Delete this slot?');">
 
-    <input
-        type="hidden"
-        name="id"
-        value="<?php echo (int) $row['id']; ?>">
+                                        <input
+                                            type="hidden"
+                                            name="id"
+                                            value="<?php echo (int) $row['id']; ?>">
 
-    <input
-        type="hidden"
-        name="csrf_token"
-        value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
 
-    <button
-        type="submit"
-        class="btn btn-sm btn-outline-danger">
-        Delete
-    </button>
-</form>
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-outline-danger">
+                                            Delete
+                                        </button>
+                                    </form>
 
                                 </td>
 

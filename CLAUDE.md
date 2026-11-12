@@ -13,12 +13,32 @@ A simple lecturer consultation booking app for a university assignment. Students
 
 - `index.php` — home page
 - `config/db.php` — mysqli connection (`$conn`) and `BASE_URL`
-- `auth/` — login, register, logout
-- `lecturer/` — lecturer pages (manage slots, review bookings)
-- `student/` — student pages (browse slots, make bookings)
-- `includes/header.php`, `includes/footer.php` — shared layout; set `$pageTitle` before including the header
-- `assets/css/style.css` — custom styles on top of Bootstrap
+- `includes/header.php`, `includes/footer.php` — shared layout with role-based navbar; set `$pageTitle` before including the header
+- `assets/css/style.css` — custom styles on top of Bootstrap (colour tokens and shared `ce-*` classes from the UI mockup)
 - `database.sql` — creates the `consultease` database, tables and sample users
+- `docs/ConsultEase UI Mockup.pdf` — the team's UI mockup
+
+### Pages
+
+`auth/` — there is no register page; accounts come from `database.sql`.
+- `login.php` — email + password login, redirects by role
+- `logout.php` — ends the session, back to login
+
+`lecturer/` — every page requires `$_SESSION['user_role'] === 'lecturer'`.
+- `list_slots.php` — the lecturer's slots, with Edit and Delete
+- `create_slot.php` — form to create a slot
+- `edit_slot.php` — form to update a slot (`?id=`)
+- `delete_slot.php` — POST handler, deletes a slot (CSRF-checked)
+- `booking_requests.php` — bookings on the lecturer's slots, with Confirm / Decline
+- `update_booking_status.php` — POST handler, sets a Pending booking to Confirmed or Declined (CSRF-checked)
+
+`student/` — every page requires `$_SESSION['user_role'] === 'student'`.
+- `available_slots.php` — student dashboard: upcoming slots with no Pending or Confirmed booking
+- `book_slot.php` — book a slot (`?slot_id=`) with a reason; blocks double booking
+- `my_bookings.php` — the student's bookings and statuses, with Cancel
+- `cancel_booking.php` — POST handler, sets a Pending or Confirmed booking to Cancelled (CSRF-checked)
+
+Session keys set at login: `user_id`, `user_name`, `user_role`.
 
 ## Database
 

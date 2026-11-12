@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 
@@ -13,7 +12,7 @@ if (
 }
 
 require_once '../config/db.php';
- 
+
 // Generate CSRF token for booking cancellation
 if (empty($_SESSION['cancel_csrf_token'])) {
     $_SESSION['cancel_csrf_token'] = bin2hex(random_bytes(32));
@@ -41,83 +40,90 @@ $stmt->bind_param("i", $student_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
+$pageTitle = 'My Bookings - ConsultEase';
+include '../includes/header.php';
 ?>
-<h2>My Booking Status</h2>
-<table border="1" cellpadding="8">
-    <tr>
-    <th>Lecturer</th>
-    <th>Date</th>
-    <th>Time</th>
-    <th>Venue</th>
-    <th>Status</th>
-    <th>Action</th>
-</tr>
-    <?php while ($row = $result->fetch_assoc()): ?>
-    <tr>
-        <td><?= $row['lecturer_name'] ?></td>
-        <td><?= $row['slot_date'] ?></td>
-        <td><?= $row['start_time'] ?> - <?= $row['end_time'] ?></td>
-        <td><?= $row['venue'] ?></td>
-        <td>
-    <strong><?= htmlspecialchars($row['status']) ?></strong>
-</td>
 
-
-<td>
-    <?php if (in_array($row['status'], ['Pending', 'Confirmed'], true)): ?>
-
-        <form method="POST"
-      action="cancel_booking.php"
-      class="cancel-booking-form"
-      onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-
-            <input type="hidden"
-                   name="booking_id"
-                   value="<?php echo (int) $row['booking_id']; ?>">
-
-            <input type="hidden"
-                   name="csrf_token"
-                   value="<?php echo htmlspecialchars($_SESSION['cancel_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-
-            <button type="submit"
-                    class="btn btn-outline-danger btn-sm">
-                Cancel Booking
-            </button>
-
-        </form>
-
-    <?php else: ?>
-        <span>—</span>
-    <?php endif; ?>
-</td>
-
-    </tr>
-    <?php endwhile; ?>
-</table>
-<div style="margin-top: 20px;">
-    <a href="available_slots.php" class="btn btn-outline-primary">
-        ← Back to Dashboard
-    </a>
+<div class="mb-4">
+    <h1 class="h3 fw-bold mb-1">My Bookings</h1>
+    <p class="text-muted-ce mb-0">View your consultation booking history and current booking statuses.</p>
 </div>
-<style>
-    /* Remove the white box around the Cancel Booking button */
-form.cancel-booking-form {
-    background: transparent;
-    padding: 0;
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-    max-width: none;
-}
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; }
-    h2 { color: #2c3e50; }
-    form { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; }
-    input[type="date"], input[type="time"], input[type="text"] { width: 100%; padding: 10px; margin: 8px 0 20px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    button { background-color: #3498db; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-    button:hover { background-color: #2980b9; }
-    a { color: #3498db; text-decoration: none; display: inline-block; margin-top: 15px; }
-    table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-top: 20px; }
-    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #3498db; color: white; }
-    tr:hover { background-color: #f1f1f1; }
-</style>
+
+<div class="card ce-card">
+    <div class="p-3 p-md-4">
+        <h2 class="h5 fw-bold mb-0">Consultation Schedule Records</h2>
+    </div>
+
+    <?php if ($result->num_rows === 0): ?>
+        <div class="text-center px-3 py-5 border-top">
+            <p class="fw-semibold mb-1">You have no bookings yet.</p>
+            <p class="text-muted-ce mb-3">Book an available slot to request a consultation.</p>
+            <a href="available_slots.php" class="btn btn-ce-primary">View Available Slots</a>
+        </div>
+    <?php else: ?>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 ce-table" aria-label="My consultation bookings">
+                <thead>
+                    <tr>
+                        <th scope="col" class="ps-4">Lecturer</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Venue</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <?php
+                        // e.g. "12 Nov 2026" and "10:00 AM - 11:00 AM"
+                        $dateText = date('j M Y', strtotime($row['slot_date']));
+                        $timeText = date('h:i A', strtotime($row['start_time']))
+                            . ' - ' . date('h:i A', strtotime($row['end_time']));
+                        ?>
+                        <tr>
+                            <td class="ps-4 fw-semibold"><?php echo htmlspecialchars($row['lecturer_name']); ?></td>
+                            <td class="tabular"><?php echo htmlspecialchars($dateText); ?></td>
+                            <td class="tabular"><?php echo htmlspecialchars($timeText); ?></td>
+                            <td><span class="ce-pill"><?php echo htmlspecialchars($row['venue']); ?></span></td>
+                            <td>
+                                <span class="status-badge status-<?php echo htmlspecialchars(strtolower($row['status'])); ?>">
+                                    <?php echo htmlspecialchars($row['status']); ?>
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <?php if (in_array($row['status'], ['Pending', 'Confirmed'], true)): ?>
+                                    <form method="POST"
+                                          action="cancel_booking.php"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                                        <input type="hidden"
+                                               name="booking_id"
+                                               value="<?php echo (int) $row['booking_id']; ?>">
+                                        <input type="hidden"
+                                               name="csrf_token"
+                                               value="<?php echo htmlspecialchars($_SESSION['cancel_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            Cancel Booking
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="text-muted-ce" aria-label="No action available">&mdash;</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+    <div class="small text-muted-ce border-top px-3 px-md-4 py-3">
+        Only Pending or Confirmed bookings can be cancelled.
+    </div>
+</div>
+
+<?php
+$stmt->close();
+include '../includes/footer.php';
+?>

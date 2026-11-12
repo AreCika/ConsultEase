@@ -70,11 +70,12 @@ include '../includes/header.php';
                 </p>
 
                 <?php if (!empty($error)): ?>
-    <div class="alert alert-danger" role="alert">
-        <?php echo htmlspecialchars($error); ?>
-    </div>
-<?php endif; ?>
-<form method="POST" action="login.php">
+                    <div class="alert alert-danger" role="alert">
+                        <?php echo htmlspecialchars($error); ?>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" action="login.php">
 
                     <div class="mb-3">
                         <label for="email" class="form-label">

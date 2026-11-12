@@ -130,64 +130,63 @@ include_once '../includes/header.php';
                                         </span>
                                     </td>
 
-                                    
-<td>
-    <?php if ($row['status'] === 'Pending'): ?>
+                                    <td>
+                                        <?php if ($row['status'] === 'Pending'): ?>
 
-        <div class="d-flex gap-2">
+                                            <div class="d-flex gap-2">
 
-            <!-- Confirm Booking -->
-            <form method="POST"
-                  action="update_booking_status.php">
+                                                <!-- Confirm Booking -->
+                                                <form method="POST"
+                                                      action="update_booking_status.php">
 
-                <input type="hidden"
-                       name="booking_id"
-                       value="<?php echo (int) $row['booking_id']; ?>">
+                                                    <input type="hidden"
+                                                           name="booking_id"
+                                                           value="<?php echo (int) $row['booking_id']; ?>">
 
-                <input type="hidden"
-                       name="action"
-                       value="confirm">
+                                                    <input type="hidden"
+                                                           name="action"
+                                                           value="confirm">
 
-                <input type="hidden"
-                       name="csrf_token"
-                       value="<?php echo htmlspecialchars($_SESSION['booking_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden"
+                                                           name="csrf_token"
+                                                           value="<?php echo htmlspecialchars($_SESSION['booking_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
 
-                <button type="submit"
-                        class="btn btn-success btn-sm"
-                        onclick="return confirm('Confirm this booking?');">
-                    Confirm
-                </button>
-            </form>
+                                                    <button type="submit"
+                                                            class="btn btn-success btn-sm"
+                                                            onclick="return confirm('Confirm this booking?');">
+                                                        Confirm
+                                                    </button>
+                                                </form>
 
-            <!-- Decline Booking -->
-            <form method="POST"
-                  action="update_booking_status.php">
+                                                <!-- Decline Booking -->
+                                                <form method="POST"
+                                                      action="update_booking_status.php">
 
-                <input type="hidden"
-                       name="booking_id"
-                       value="<?php echo (int) $row['booking_id']; ?>">
+                                                    <input type="hidden"
+                                                           name="booking_id"
+                                                           value="<?php echo (int) $row['booking_id']; ?>">
 
-                <input type="hidden"
-                       name="action"
-                       value="decline">
+                                                    <input type="hidden"
+                                                           name="action"
+                                                           value="decline">
 
-                <input type="hidden"
-                       name="csrf_token"
-                       value="<?php echo htmlspecialchars($_SESSION['booking_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden"
+                                                           name="csrf_token"
+                                                           value="<?php echo htmlspecialchars($_SESSION['booking_csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
 
-                <button type="submit"
-                        class="btn btn-danger btn-sm"
-                        onclick="return confirm('Decline this booking?');">
-                    Decline
-                </button>
-            </form>
+                                                    <button type="submit"
+                                                            class="btn btn-danger btn-sm"
+                                                            onclick="return confirm('Decline this booking?');">
+                                                        Decline
+                                                    </button>
+                                                </form>
 
-        </div>
+                                            </div>
 
-    <?php else: ?>
-        <span class="text-muted">—</span>
-    <?php endif; ?>
-</td>
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
+                                        <?php endif; ?>
+                                    </td>
 
                                 </tr>
                             <?php endwhile; ?>
