@@ -8,11 +8,11 @@ ConsultEase replaces informal consultation arrangements between students and lec
 
 **Team**
 
-| Name | Role |
-|---|---|
-| Mohamad Amirul Ariff | Project Manager |
-| Wan Nurain Syafiah | Developer |
-| Syazwani | Developer / QA |
+| Name | Matric No. | Role |
+|------|------------|------|
+| Mohamad Amirul Ariff bin Mohamed Zaini | B032410513 | Project Manager, Business Analyst |
+| Wan Nurain Syafiah binti Wan Mohd Nor | B032410581 | Development Lead |
+| Syazwani binti Musawir | B032410559 | QA / UX Lead, Documentation |
 
 ## Features
 
